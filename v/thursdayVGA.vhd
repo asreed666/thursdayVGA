@@ -51,7 +51,7 @@ signal ydotpos : integer range 0 to 524       :=   0;
 begin
 
 RST <= not KEY(0);
-xdotpos <= (to_integer(unsigned(hpos)));
+xdotpos <= (to_integer(unsigned(hpos))); -- make numerical
 ydotpos <= (to_integer(unsigned(vpos)));
 pixelxpos <= xdotpos - 144; -- back porch offset
 pixelypos <= ydotpos - 34;

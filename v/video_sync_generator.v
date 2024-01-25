@@ -1,3 +1,4 @@
+// adapted for city2077 pong game
 module video_sync_generator(reset,
                             vga_clk,
                             blank_n,
