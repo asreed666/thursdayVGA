@@ -61,7 +61,15 @@ vidclk_inst : vidclk PORT MAP (
 		c0	 		=> pixelclk
 	);
 	
-syncgeninst : video_sync_generator port map ( rst, pixelclk, blanking, VGA_HS, VGA_VS, hpos, vpos);
+syncgeninst : video_sync_generator port map ( 
+		rst, 
+		pixelclk, 
+		blanking, 
+		VGA_HS, 
+		VGA_VS, 
+		hpos, 
+		vpos
+	);
 
 process(pixelclk)
 	begin
