@@ -47,6 +47,12 @@ signal pixelypos : integer range 0 to 479       :=   0;
 
 signal xdotpos : integer range 0 to 799       :=   0;
 signal ydotpos : integer range 0 to 524       :=   0;
+signal ballsize : integer range 0 to 10 := 10;
+signal ballx : integer range 0 to 639       :=   20;
+signal bally : integer range 0 to 479       :=   20;
+signal VS :	std_logic;
+signal HS :	std_logic;
+
 
 begin
 
@@ -55,6 +61,8 @@ xdotpos <= (to_integer(unsigned(hpos))); -- make numerical
 ydotpos <= (to_integer(unsigned(vpos)));
 pixelxpos <= xdotpos - 144; -- back porch offset
 pixelypos <= ydotpos - 34;
+VGA_VS <= VS;
+VGA_HS <= HS;
 
 vidclk_inst : vidclk PORT MAP (
 		inclk0	=> max10_CLK1_50,
@@ -65,8 +73,8 @@ syncgeninst : video_sync_generator port map (
 		rst, 
 		pixelclk, 
 		blanking, 
-		VGA_HS, 
-		VGA_VS, 
+		HS, 
+		VS, 
 		hpos, 
 		vpos
 	);
@@ -93,7 +101,26 @@ process(pixelclk)
 				vga_b <= "0000";
 
 			end if;
+			if (ballx >= pixelxpos) and (ballx < pixelxpos + ballsize) and
+				(bally >= pixelypos) and (bally < pixelypos + ballsize) then
+				vga_r <= "1111";
+				vga_g <= "1111";
+				vga_b <= "1111";
+			end if;
+	
+			
 
 		end if;
 	end process;
+process (VS) -- 60Hz clock timing
+	begin
+	if (rising_edge(VS)) then	
+		ballx <= ballx + 1;
+		if ballx > 639 then ballx <= 0;
+		end if;
+		bally <= bally + 1;
+		if bally > 479 then bally <= 0;
+		end if;
+	end if;
+end process;
 end architecture RTL;
