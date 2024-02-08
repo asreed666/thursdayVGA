@@ -35,6 +35,18 @@ architecture RTL of thursdayVGA is
         );
   end component;
 
+-- sprite for ball
+  signal ball : std_logic_vector(99 downto 0) :=
+    ('0', '0', '0', '1', '1', '1', '1', '0', '0', '0',
+     '0', '0', '1', '1', '1', '1', '1', '1', '0', '0',
+     '0', '1', '1', '1', '1', '1', '1', '1', '1', '0',
+     '1', '1', '1', '1', '1', '1', '1', '1', '1', '1',
+     '1', '1', '1', '1', '0', '0', '1', '1', '1', '1',
+     '1', '1', '1', '1', '0', '0', '1', '1', '1', '1',
+     '1', '1', '1', '1', '1', '1', '1', '1', '1', '1',
+     '0', '1', '1', '1', '1', '1', '1', '1', '1', '0',
+     '0', '0', '1', '1', '1', '1', '1', '1', '0', '0',
+     '0', '0', '0', '1', '1', '1', '1', '0', '0', '0');
 
 
   signal RST       : std_logic;
@@ -50,6 +62,9 @@ architecture RTL of thursdayVGA is
   signal ballsize : integer range 0 to 10  := 10;
   signal ballx    : integer range 0 to 639 := 20;
   signal bally    : integer range 0 to 479 := 20;
+  signal ballxdir : integer range -1 to 1	:= 1;
+  signal ballydir : integer range -1 to 1	:= 1;
+  signal ballspd  : integer range -10 to 10 := 2;
   signal VS       : std_logic;
   signal HS       : std_logic;
 
@@ -87,25 +102,28 @@ begin
       vga_b <= "0000";
     elsif (rising_edge(pixelclk)) then
 
-      if (pixelxpos < 215) then
+      if ((pixelypos >= 105) and (pixelypos <= 475)) then
+        vga_r <= "0001";
+        vga_g <= "0111";
+        vga_b <= "0001";
+      elsif ((pixelypos >100) and (pixelypos < 105)) or 
+			((pixelypos >475) and (pixelypos < 479)) then
         vga_r <= "1111";
-        vga_g <= "0000";
-        vga_b <= "0000";
-      elsif (pixelxpos > 425) then
-        vga_r <= "0000";
-        vga_g <= "0000";
+        vga_g <= "1111";
         vga_b <= "1111";
       else
         vga_r <= "0000";
-        vga_g <= "1111";
+        vga_g <= "0000";
         vga_b <= "0000";
 
       end if;
       if (ballx >= pixelxpos) and (ballx < pixelxpos + ballsize) and
         (bally >= pixelypos) and (bally < pixelypos + ballsize) then
-        vga_r <= "1111";
-        vga_g <= "1111";
-        vga_b <= "1111";
+		if (ball((pixelxpos - ballx) + (10 * (pixelypos - bally))-29) =  '1') then
+			vga_r <= "1111";
+			vga_g <= "1111";
+			vga_b <= "1111";
+		end if;
       end if;
 
 
@@ -115,11 +133,13 @@ begin
   process (VS)                          -- 60Hz clock timing
   begin
     if (rising_edge(VS)) then
-      ballx                     <= ballx + 1;
-      if ballx > 639 then ballx <= 0;
+      ballx                     <= ballx + (ballspd * ballxdir); -- ball control
+      if ballx >= 639 then ballxdir <= -1;
+	  elsif (ballx <= 1) then ballxdir  <= 1; ballx <= 3;
       end if;
-      bally                     <= bally + 1;
-      if bally > 479 then bally <= 0;
+      bally                     <= bally + (ballspd * ballydir);
+      if bally >= 475 then ballydir <= -1;
+	  elsif (bally <= 115) then ballydir  <= 1;
       end if;
     end if;
   end process;
