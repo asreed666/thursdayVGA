@@ -47,7 +47,19 @@ architecture RTL of thursdayVGA is
      '0', '1', '1', '1', '1', '1', '1', '1', '1', '0',
      '0', '0', '1', '1', '1', '1', '1', '1', '0', '0',
      '0', '0', '0', '1', '1', '1', '1', '0', '0', '0');
-
+-- sprite for paddle
+--  signal paddle : std_logic_vector( 19 downto 0) :=
+--	('1', '1',
+--	 '1', '1',
+--	 '1', '1',
+--	 '1', '1',
+--	 '1', '1',
+--	 '1', '1',
+--	 '1', '1',
+--	 '1', '1',
+--	 '1', '1',
+--	 '1', '1');
+	
 
   signal RST       : std_logic;
   signal pixelclk  : std_logic;
@@ -56,6 +68,8 @@ architecture RTL of thursdayVGA is
   signal vpos      : std_logic_vector(9 downto 0);
   signal pixelxpos : integer range 0 to 639 := 0;
   signal pixelypos : integer range 0 to 479 := 0;
+  signal paddlePlyr1 : integer range 0 to 479 := 200;
+  signal paddlePlyr2 : integer range 0 to 479 := 200;
 
   signal xdotpos  : integer range 0 to 799 := 0;
   signal ydotpos  : integer range 0 to 524 := 0;
@@ -125,7 +139,22 @@ begin
 			vga_b <= "1111";
 		end if;
       end if;
-
+	  if (paddleplyr1 > pixelypos) and 
+		 (paddleplyr1 < pixelypos + 30) and
+		 (pixelxpos> 20 ) and
+		 (pixelxpos < 25) then
+			vga_r <= "1111";
+			vga_g <= "1111";
+			vga_b <= "1111";
+	  end if;
+	  if (paddleplyr2 > pixelypos) and 
+		 (paddleplyr2 < pixelypos + 30) and
+		 (pixelxpos> 620 ) and
+		 (pixelxpos < 625) then
+			vga_r <= "1111";
+			vga_g <= "1111";
+			vga_b <= "1111";
+	  end if;
 
 
     end if;
@@ -141,6 +170,9 @@ begin
       if bally >= 475 then ballydir <= -1;
 	  elsif (bally <= 115) then ballydir  <= 1;
       end if;
-    end if;
+	  paddleplyr1 <= bally + 15;
+	  paddleplyr2 <= bally + 15;
+	end if;
+	
   end process;
 end architecture RTL;
