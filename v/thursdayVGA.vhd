@@ -170,6 +170,17 @@ begin
       if bally >= 475 then ballydir <= -1;
 	  elsif (bally <= 115) then ballydir  <= 1;
       end if;
+	  if (ballx  < 35 ) and (ballx > 25) and
+		 (bally > paddlePlyr1 - 20) and
+		 (bally < paddlePlyr1 + 20) then
+	     ballxdir <= 1;
+	  end if;
+	  if (ballx  < 625 ) and (ballx > 620) and
+		 (bally > paddlePlyr2 - 20) and
+		 (bally < paddlePlyr2 + 20) then
+	     ballxdir <= -1;
+	  end if;
+-- AI controlled paddles
 	  paddleplyr1 <= bally + 15;
 	  paddleplyr2 <= bally + 15;
 	end if;
