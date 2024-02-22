@@ -5,6 +5,7 @@ use ieee.numeric_std.all;
 entity thursdayVGA is
   port(
     MAX10_CLK1_50 : in  std_logic;
+	ADC_CLK_10	  : in std_logic;
     KEY           : in  std_logic_vector (1 downto 0);
     VGA_HS        : out std_logic;
     VGA_VS        : out std_logic;
@@ -48,6 +49,20 @@ architecture RTL of thursdayVGA is
 
     );
 end component;
+	component paddles
+		port (
+			CLOCK : in  std_logic                     := 'X'; -- clk
+			RESET : in  std_logic                     := 'X'; -- reset
+			CH0   : out std_logic_vector(11 downto 0);        -- CH0
+			CH1   : out std_logic_vector(11 downto 0);        -- CH1
+			CH2   : out std_logic_vector(11 downto 0);        -- CH2
+			CH3   : out std_logic_vector(11 downto 0);        -- CH3
+			CH4   : out std_logic_vector(11 downto 0);        -- CH4
+			CH5   : out std_logic_vector(11 downto 0);        -- CH5
+			CH6   : out std_logic_vector(11 downto 0);        -- CH6
+			CH7   : out std_logic_vector(11 downto 0)         -- CH7
+		);
+	end component paddles;
 
 -- sprite for ball
   signal ball : std_logic_vector(99 downto 0) :=
@@ -99,6 +114,10 @@ end component;
   signal txtdata  : std_logic_vector(7 downto 0);
   signal wren	  : std_logic;
   signal txtpixel : std_logic;
+  signal paddlepos1 : std_logic_vector (11 downto 0);
+  signal paddlepos2 : std_logic_vector (11 downto 0);
+  signal paddlepos3 : std_logic_vector (11 downto 0);
+  signal paddlepos4 : std_logic_vector (11 downto 0);
 
 begin
 
@@ -134,6 +153,19 @@ begin
   blanking,
   txtpixel
   );
+  u0 : component paddles
+		port map (
+			CLOCK => ADC_CLK_10, --      clk.clk
+			RESET => rst, --    reset.reset
+			CH0   => paddlepos1,   -- readings.CH0
+			CH1   => paddlepos2,   --         .CH1
+			CH2   => paddlepos3,   --         .CH2
+			CH3   => paddlepos4   --         .CH3
+--			CH4   => CONNECTED_TO_CH4,   --         .CH4
+--			CH5   => CONNECTED_TO_CH5,   --         .CH5
+--			CH6   => CONNECTED_TO_CH6,   --         .CH6
+--			CH7   => CONNECTED_TO_CH7    --         .CH7
+		);
   
 
   process(pixelclk)
@@ -212,9 +244,9 @@ begin
 		 (bally < paddlePlyr2 + 20) then
 	     ballxdir <= -1;
 	  end if;
--- AI controlled paddles
-	  paddleplyr1 <= bally + 15;
-	  paddleplyr2 <= bally + 15;
+-- player controlled paddles
+	  paddleplyr1 <= (to_integer(unsigned(paddlepos1(11 downto 3))));
+	  paddleplyr2 <= (to_integer(unsigned(paddlepos2(11 downto 3))));
 	end if;
 	
   end process;
