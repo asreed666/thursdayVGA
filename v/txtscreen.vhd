@@ -30,7 +30,7 @@ architecture RTL of txtScreen is
         q       : out std_logic_vector (7 downto 0)
         );
   end component;
-  component dispmem
+  component vidmem
     port
       (
         clock     : in  std_logic := '1';
@@ -55,7 +55,7 @@ begin
     clock   => pClk,
     q       => q_8x12
     );
-  dispmem_inst : dispmem port map (
+  vidmem_inst : vidmem port map (
     clock     => pClk,
     data      => data,
     rdaddress => vAddr,

@@ -34,6 +34,20 @@ architecture RTL of thursdayVGA is
         c0     : out std_logic
         );
   end component;
+  component txtScreen
+--       generic(); -- pixel position
+  port(
+    hp, vp :    integer;
+    addr   : in std_logic_vector(11 downto 0);  -- text screen ram
+    data   : in std_logic_vector(7 downto 0);
+    nWr    : in std_logic;
+    pClk   : in std_logic;
+    nblnk  : in std_logic;
+
+    pix : out std_logic
+
+    );
+end component;
 
 -- sprite for ball
   signal ball : std_logic_vector(99 downto 0) :=
@@ -81,7 +95,10 @@ architecture RTL of thursdayVGA is
   signal ballspd  : integer range -10 to 10 := 2;
   signal VS       : std_logic;
   signal HS       : std_logic;
-
+  signal txtaddress: std_logic_vector(11 downto 0);
+  signal txtdata  : std_logic_vector(7 downto 0);
+  signal wren	  : std_logic;
+  signal txtpixel : std_logic;
 
 begin
 
@@ -107,6 +124,17 @@ begin
     hpos,
     vpos
     );
+  txtscreenInst : txtscreen port map (
+  pixelxpos,
+  pixelypos,
+  txtaddress,
+  txtdata,
+  wren,
+  pixelclk,
+  blanking,
+  txtpixel
+  );
+  
 
   process(pixelclk)
   begin
@@ -125,7 +153,11 @@ begin
         vga_r <= "1111";
         vga_g <= "1111";
         vga_b <= "1111";
-      else
+      elsif (txtpixel = '1') then
+	    vga_r <= "1111";
+        vga_g <= "1111";
+        vga_b <= "0000";
+	  else
         vga_r <= "0000";
         vga_g <= "0000";
         vga_b <= "0000";
