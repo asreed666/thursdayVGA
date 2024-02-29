@@ -433,6 +433,7 @@ set_global_assignment -name OUTPUT_IO_TIMING_NEAR_END_VMEAS "HALF VCCIO" -rise
 set_global_assignment -name OUTPUT_IO_TIMING_NEAR_END_VMEAS "HALF VCCIO" -fall
 set_global_assignment -name OUTPUT_IO_TIMING_FAR_END_VMEAS "HALF SIGNAL SWING" -rise
 set_global_assignment -name OUTPUT_IO_TIMING_FAR_END_VMEAS "HALF SIGNAL SWING" -fall
+set_global_assignment -name SDC_FILE SDC2.sdc
 set_global_assignment -name QIP_FILE v/paddles/synthesis/paddles.qip
 set_global_assignment -name VHDL_FILE v/txtscreen.vhd
 set_global_assignment -name MIF_FILE v/ramstart.mif

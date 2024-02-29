@@ -245,8 +245,8 @@ begin
 	     ballxdir <= -1;
 	  end if;
 -- player controlled paddles
-	  paddleplyr1 <= (to_integer(unsigned(paddlepos1(11 downto 3))));
-	  paddleplyr2 <= (to_integer(unsigned(paddlepos2(11 downto 3))));
+	  paddleplyr1 <= (paddleplyr1 + (to_integer(unsigned(paddlepos1(11 downto 3)))))/2;
+	  paddleplyr2 <= (paddleplyr2 + (to_integer(unsigned(paddlepos2(11 downto 3)))))/2;
 	end if;
 	
   end process;
