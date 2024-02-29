@@ -11,7 +11,8 @@ entity thursdayVGA is
     VGA_VS        : out std_logic;
     VGA_R         : out std_logic_vector (3 downto 0);
     VGA_G         : out std_logic_vector (3 downto 0);
-    VGA_B         : out std_logic_vector (3 downto 0)
+    VGA_B         : out std_logic_vector (3 downto 0);
+	LEDR		  : out std_logic_vector (9 downto 0)
     );
 end thursdayVGA;
 architecture RTL of thursdayVGA is
@@ -118,6 +119,27 @@ end component;
   signal paddlepos2 : std_logic_vector (11 downto 0);
   signal paddlepos3 : std_logic_vector (11 downto 0);
   signal paddlepos4 : std_logic_vector (11 downto 0);
+  
+  signal plyr1score : integer := 0;
+  signal plyr1setscore: integer := 0;
+  signal plyr1wins: integer := 0;
+  signal plyr2score : integer := 0;
+  signal plyr2setscore: integer := 0;
+  signal plyr2wins: integer := 0;
+  
+  signal charpos              : integer range 0 to 4191      := 0; -- character position from start of screen memory
+  signal tens1                : integer range 0 to 255       := 0; -- player 1 BCD score
+  signal unit1                : integer range 0 to 255       := 0;
+  signal tens2                : integer range 0 to 255       := 0; -- player 2 BCD score
+  signal unit2                : integer range 0 to 255       := 0;
+  signal games1               : integer range 0 to 255       := 0; -- player 2 BCD score
+  signal games2               : integer range 0 to 255       := 0;
+
+  
+  signal cycle : std_logic := '0'; -- memory write cycle
+  
+  constant p1scpos: std_logic_vector (11 downto 0) := "000001011000"; -- 0x58
+  constant p2scpos: std_logic_vector (11 downto 0) := "000001101100"; -- 0x6c
 
 begin
 
@@ -166,8 +188,59 @@ begin
 --			CH6   => CONNECTED_TO_CH6,   --         .CH6
 --			CH7   => CONNECTED_TO_CH7    --         .CH7
 		);
-  
+  -- Enumerate the digits of the scores
+  tens1 <= 48 + ((plyr1score / 10) mod 10);
+  unit1 <= 48 + (plyr1score mod 10);
+  tens2 <= 48 + ((plyr2score / 10) mod 10);
+  unit2 <= 48 + (plyr2score mod 10);
+  games1 <= 48 + plyr1setscore mod 10;
+  games2 <= 48 + plyr2setscore mod 10;
+  ledr <= std_logic_vector(to_unsigned(plyr1score, ledr'length));
+  process(pixelclk)
+	begin 	-- update the display with player scores
+	if (rst = '1') then
+		txtaddress <= "000000000000";
+		txtdata <= "00000000";
+		wren <= '0';
+		cycle <= '0';
+		charpos <= 0;
+    else
+		if cycle = '0' then
+			txtAddress <= std_logic_vector(to_unsigned(charpos, txtAddress'length));
+			cycle <= '1';
+			if charpos = 48 then
 
+			    txtdata <= std_logic_vector(to_unsigned(tens1, txtdata'length)); -- write p1 units to display
+			    wren <= '1';
+			end if;
+			if charpos = 49 then
+
+			    txtdata <= std_logic_vector(to_unsigned(unit1, txtdata'length)); -- write p1 units to display
+			    wren <= '1';
+			end if;
+			if charpos = 58 then
+
+			    txtdata <= std_logic_vector(to_unsigned(tens2, txtdata'length)); -- write p1 units to display
+			    wren <= '1';
+			    cycle <= '1';
+			end if;
+			if charpos = 59 then
+
+			    txtdata <= std_logic_vector(to_unsigned(unit2, txtdata'length)); -- write p1 units to display
+			    wren <= '1';
+			end if;
+		else
+			wren <= '0';
+			cycle <= '0';
+--			if charpos > 4092 then
+--				charpos <= 0;
+--				
+--			else
+				charpos <= charpos + 1;
+--			end if;
+		end if;
+	end if;
+  end process;	
   process(pixelclk)
   begin
     if ((rst = '1') or (blanking = '0')) then
@@ -219,7 +292,7 @@ begin
 			vga_g <= "1111";
 			vga_b <= "1111";
 	  end if;
-
+	  
 
     end if;
   end process;
@@ -227,21 +300,30 @@ begin
   begin
     if (rising_edge(VS)) then
       ballx                     <= ballx + (ballspd * ballxdir); -- ball control
-      if ballx >= 639 then ballxdir <= -1;
-	  elsif (ballx <= 1) then ballxdir  <= 1; ballx <= 3;
+      if ballx >= 639 then 
+		ballxdir <= -1;
+		plyr1score <= plyr1score + 1;
+	  elsif (ballx <= 1) then 
+		ballxdir  <= 1; ballx <= 3;
+		plyr2score <= plyr2score + 1;
       end if;
+	  if plyr1score >= 11 then 
+		plyr1wins <= 1;
+	  elsif plyr2score >= 11 then
+		plyr2wins <= 1;
+	  end if;
       bally                     <= bally + (ballspd * ballydir);
       if bally >= 475 then ballydir <= -1;
 	  elsif (bally <= 115) then ballydir  <= 1;
       end if;
-	  if (ballx  < 35 ) and (ballx > 25) and
-		 (bally > paddlePlyr1 - 20) and
-		 (bally < paddlePlyr1 + 20) then
+	  if (ballx  < 35 ) and (ballx > 25) and  -- Has player 1 hit the ball?
+		 (bally > paddlePlyr1 - 24) and
+		 (bally < paddlePlyr1 + 16) then
 	     ballxdir <= 1;
 	  end if;
-	  if (ballx  < 625 ) and (ballx > 620) and
-		 (bally > paddlePlyr2 - 20) and
-		 (bally < paddlePlyr2 + 20) then
+	  if (ballx  < 625 ) and (ballx > 620) and  -- Has player 2 hit the ball?
+		 (bally > paddlePlyr2 - 24) and
+		 (bally < paddlePlyr2 + 16) then
 	     ballxdir <= -1;
 	  end if;
 -- player controlled paddles
