@@ -12,7 +12,7 @@ entity thursdayVGA is
     VGA_R         : out std_logic_vector (3 downto 0);
     VGA_G         : out std_logic_vector (3 downto 0);
     VGA_B         : out std_logic_vector (3 downto 0);
-	LEDR		  : out std_logic_vector (9 downto 0)
+	LEDR		  : out std_logic_vector (9 downto 0)  -- debug LEDS
     );
 end thursdayVGA;
 architecture RTL of thursdayVGA is
@@ -136,7 +136,8 @@ end component;
   signal games2               : integer range 0 to 255       := 0;
 
   
-  signal cycle : std_logic := '0'; -- memory write cycle
+  signal cycle : integer := 0; -- memory write cycle
+  signal debugCount : integer range 0 to 1047 := 0; -- counter to help with debugging
   
   constant p1scpos: std_logic_vector (11 downto 0) := "000001011000"; -- 0x58
   constant p2scpos: std_logic_vector (11 downto 0) := "000001101100"; -- 0x6c
@@ -195,49 +196,49 @@ begin
   unit2 <= 48 + (plyr2score mod 10);
   games1 <= 48 + plyr1setscore mod 10;
   games2 <= 48 + plyr2setscore mod 10;
-  ledr <= std_logic_vector(to_unsigned(plyr1score, ledr'length));
-  process(pixelclk)
+  ledr <= std_logic_vector(to_unsigned(debugCount, ledr'length));
+  process(max10_clk1_50)
 	begin 	-- update the display with player scores
-	if (rst = '1') then
+	if (rising_edge(max10_clk1_50)) then
+		if rst = '1' then
 		txtaddress <= "000000000000";
 		txtdata <= "00000000";
 		wren <= '0';
-		cycle <= '0';
+		cycle <= 0;
 		charpos <= 0;
-    else
-		if cycle = '0' then
-			txtAddress <= std_logic_vector(to_unsigned(charpos, txtAddress'length));
-			cycle <= '1';
-			if charpos = 48 then
-
-			    txtdata <= std_logic_vector(to_unsigned(tens1, txtdata'length)); -- write p1 units to display
-			    wren <= '1';
-			end if;
-			if charpos = 49 then
-
-			    txtdata <= std_logic_vector(to_unsigned(unit1, txtdata'length)); -- write p1 units to display
-			    wren <= '1';
-			end if;
-			if charpos = 58 then
-
-			    txtdata <= std_logic_vector(to_unsigned(tens2, txtdata'length)); -- write p1 units to display
-			    wren <= '1';
-			    cycle <= '1';
-			end if;
-			if charpos = 59 then
-
-			    txtdata <= std_logic_vector(to_unsigned(unit2, txtdata'length)); -- write p1 units to display
-			    wren <= '1';
-			end if;
 		else
-			wren <= '0';
-			cycle <= '0';
---			if charpos > 4092 then
---				charpos <= 0;
---				
---			else
+			if cycle = 0 then
+				cycle <= 1;
+				wren <= '0';
+				txtAddress <= std_logic_vector(to_unsigned(charpos, txtAddress'length));
+				if charpos = 48 then
+					txtdata <= std_logic_vector(to_unsigned(tens1, txtdata'length)); -- write p1 units to display
+				elsif charpos = 49 then
+					txtdata <= std_logic_vector(to_unsigned(unit1, txtdata'length)); -- write p1 units to display
+				elsif charpos = 58 then
+					txtdata <= std_logic_vector(to_unsigned(tens2, txtdata'length)); -- write p1 units to display
+				elsif charpos = 59 then
+					txtdata <= std_logic_vector(to_unsigned(unit2, txtdata'length)); -- write p1 units to display
+				else cycle <= 3;
+				end if;--			txtdata <= std_logic_vector(to_unsigned(charpos, txtdata'length));
+	
+		
+			elsif cycle = 1 then
+				wren <= '1';
+				cycle <= 2;
+			elsif cycle = 2 then
+				wren <= '0';
+				cycle <= 3;
+			elsif cycle = 3 then
 				charpos <= charpos + 1;
---			end if;
+				wren <= '0';
+				cycle <= 0;
+			else 
+				charpos <= charpos + 1;
+				wren <= '0';
+				cycle <= 0;
+	
+			end if;
 		end if;
 	end if;
   end process;	
@@ -300,15 +301,16 @@ begin
   begin
     if (rising_edge(VS)) then
       ballx                     <= ballx + (ballspd * ballxdir); -- ball control
-      if ballx >= 639 then 
+      if ballx >= 639 then -- player 2 missed +1pt for player1
 		ballxdir <= -1;
+		ballx <= 638;  -- ToDo deal with serving the ball after loss of point
 		plyr1score <= plyr1score + 1;
 	  elsif (ballx <= 1) then 
 		ballxdir  <= 1; ballx <= 3;
 		plyr2score <= plyr2score + 1;
       end if;
 	  if plyr1score >= 11 then 
-		plyr1wins <= 1;
+		plyr1wins <= 1; -- ToDo deal with serving the ball after loss of game
 	  elsif plyr2score >= 11 then
 		plyr2wins <= 1;
 	  end if;
