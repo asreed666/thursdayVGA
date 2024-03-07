@@ -143,6 +143,8 @@ architecture RTL of thursdayVGA is
   constant p1scpos : std_logic_vector (11 downto 0) := "000001011000";  -- 0x58
   constant p2scpos : std_logic_vector (11 downto 0) := "000001101100";  -- 0x6c
   
+  signal plyr1serve : std_logic;
+  
   signal blipcounter : integer range 0 to 100000000 := 0; 
   signal blopcounter : integer range 0 to 100000000 := 0;
   signal blip : std_logic;
@@ -276,9 +278,13 @@ begin
             txtdata <= std_logic_vector(to_unsigned(tens1, txtdata'length));  -- write p1 tens to display
           elsif charpos = 89 then
             txtdata <= std_logic_vector(to_unsigned(unit1, txtdata'length));  -- write p1 units to display
-          elsif charpos = 108 then
+          elsif charpos = 98 then
+            txtdata <= std_logic_vector(to_unsigned(games1, txtdata'length));  -- write p1 units to display
+          elsif charpos = 101 then
+            txtdata <= std_logic_vector(to_unsigned(games2, txtdata'length));  -- write p1 units to display
+          elsif charpos = 110 then
             txtdata <= std_logic_vector(to_unsigned(tens2, txtdata'length));  -- write p2 tens to display
-          elsif charpos = 109 then
+          elsif charpos = 111 then
             txtdata <= std_logic_vector(to_unsigned(unit2, txtdata'length));  -- write p2 units to display
           else cycle <= 2;
           end if;
@@ -366,16 +372,44 @@ begin
         ballxdir   <= -1;
         ballx      <= 638;  -- ToDo deal with serving the ball after loss of point
         plyr1score <= plyr1score + 1;
+		if plyr1score = 10 then 
+		    ballx <= 320;
+			plyr1serve <= '1';
+		end if;
 		blop <= '1';
       elsif (ballx <= 1) then
         ballxdir   <= 1; ballx <= 3;
         plyr2score <= plyr2score + 1;
+		if plyr2score = 10 then 
+		    ballx <= 320;
+			plyr1serve <= '0';
+		end if;
 		blop <= '1';
       end if;
       if plyr1score >= 11 then
-        plyr1wins <= 1;  -- ToDo deal with serving the ball after loss of game
+		plyr1setscore <= plyr1setscore + 1;
+		plyr1score <= 0;
+		plyr2score <= 0;
+        if plyr1setscore = 2 then
+			plyr1wins <= 1;
+			ballx <= 10;
+			bally <= 10;
+			ballxdir <= 0;
+			ballydir <= 0;
+			ballspd <= 0;
+		end if;
       elsif plyr2score >= 11 then
-        plyr2wins <= 1;
+		plyr2setscore <= plyr2setscore + 1;
+		plyr1score <= 0;
+		plyr2score <= 0;
+        if plyr2setscore = 2 then
+			plyr2wins <= 1;
+			ballx <= 620;
+			bally <= 10;
+			ballxdir <= 0;
+			ballydir <= 0;
+			ballspd <= 0;
+		end if;
       end if;
       bally                         <= bally + (ballspd * ballydir);
       if bally >= 475 then 
