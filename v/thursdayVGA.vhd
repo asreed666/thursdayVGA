@@ -12,7 +12,8 @@ entity thursdayVGA is
     VGA_R         : out std_logic_vector (3 downto 0);
     VGA_G         : out std_logic_vector (3 downto 0);
     VGA_B         : out std_logic_vector (3 downto 0);
-    LEDR          : out std_logic_vector (9 downto 0)  -- debug LEDS
+    LEDR          : out std_logic_vector (9 downto 0);  -- debug LEDS
+	GPIO		  : inout std_logic_vector (35 downto 0) -- some IO for audio etc
     );
 end thursdayVGA;
 architecture RTL of thursdayVGA is
@@ -132,8 +133,8 @@ architecture RTL of thursdayVGA is
   signal unit1   : integer range 0 to 255  := 0;
   signal tens2   : integer range 0 to 255  := 0;  -- player 2 BCD score
   signal unit2   : integer range 0 to 255  := 0;
-  signal games1  : integer range 0 to 255  := 0;  -- player 2 BCD score
-  signal games2  : integer range 0 to 255  := 0;
+  signal games1  : integer range 0 to 255  := 0;  -- player 1 Sets score
+  signal games2  : integer range 0 to 255  := 0;  -- player 2 Sets score
 
 
   signal cycle      : integer                 := 0;  -- memory write cycle
@@ -141,6 +142,15 @@ architecture RTL of thursdayVGA is
 
   constant p1scpos : std_logic_vector (11 downto 0) := "000001011000";  -- 0x58
   constant p2scpos : std_logic_vector (11 downto 0) := "000001101100";  -- 0x6c
+  
+  signal blipcounter : integer range 0 to 100000000 := 0; 
+  signal blopcounter : integer range 0 to 100000000 := 0;
+  signal blip : std_logic;
+  signal blop : std_logic;
+  signal blipping : std_logic;
+  signal blopping : std_logic;
+  
+  signal audio : std_logic;
 
 begin
 
@@ -157,7 +167,7 @@ begin
     c0     => pixelclk
     );
 
-  syncgeninst : video_sync_generator port map (
+  syncgeninst : component video_sync_generator port map (
     rst,
     pixelclk,
     blanking,
@@ -166,7 +176,7 @@ begin
     hpos,
     vpos
     );
-  txtscreenInst : txtscreen port map (
+  txtscreenInst : component txtscreen port map (
     pixelxpos,
     pixelypos,
     txtaddress,
@@ -196,7 +206,57 @@ begin
   unit2  <= 48 + (plyr2score mod 10);
   games1 <= 48 + plyr1setscore mod 10;
   games2 <= 48 + plyr2setscore mod 10;
-  ledr   <= std_logic_vector(to_unsigned(debugCount, ledr'length));
+--  ledr   <= std_logic_vector(to_unsigned(debugCount, ledr'length));
+  
+  gpio(9) <= audio;
+  gpio(21) <= audio;
+  gpio(23) <= blip;
+  gpio(25) <= blipping;
+  
+  process(max10_clk1_50)
+  begin  -- make some noise
+    if (rising_edge(max10_clk1_50)) then
+	  if rst = '1' then -- silence
+		blipping <= '0';
+		blopping <= '0';
+	  else
+		if (blip = '1') then 
+			blipping <= '1'; 
+		end if;
+		if (blop = '1') then 
+			blopping <= '1';
+		end if;
+		if (blipping = '1') then 
+
+			ledr(5) <= '0';
+			blipcounter <= blipcounter + 1;
+			if (blipcounter mod 25000) = 1 then 
+				audio <= not audio; -- 800 Hz
+			end if;
+			if (blipcounter > 5000000) then
+			    blipping <= '0';
+			    blipcounter <= 0;
+				ledr(5) <= '1';
+				audio <= '0';
+			end if;
+		end if;
+		if (blopping = '1') then 
+
+--			ledr(5) <= '0';
+			blopcounter <= blopcounter + 1;
+			if (blopcounter mod 50000) = 1 then 
+				audio <= not audio; -- 400 Hz
+			end if;
+			if (blopcounter > 5000000) then
+			    blopping <= '0';
+			    blopcounter <= 0;
+--				ledr(5) <= '1';
+				audio <= '0';
+			end if;
+		end if;	  end if;
+	end if;
+  end process;
+  
   process(max10_clk1_50)
   begin  -- update the display with player scores
     if (rising_edge(max10_clk1_50)) then
@@ -208,7 +268,7 @@ begin
         charpos    <= 0;
       else
         if cycle = 0 then               -- state machine for writing to text
-                                     -- memory with ascii code values
+										-- memory with ascii code values
           cycle      <= 1;
           wren       <= '0';
           txtAddress <= std_logic_vector(to_unsigned(charpos, txtAddress'length));
@@ -226,7 +286,7 @@ begin
         elsif cycle = 1 then            -- strobe wren high for one clock
           wren  <= '1';
           cycle <= 2;
-        elsif cycle = 2 then            -- complete cycle and increment
+        else             				-- cycle is 2, reset cycle and increment
                                         -- memory address for next
                                         -- character position
           wren    <= '0';
@@ -236,16 +296,6 @@ begin
           else
             charpos <= 0;
           end if;
-        else                            -- should never get here, but just
-                        -- in case increment and restart
-          if charpos < 1023 then
-            charpos <= charpos + 1;
-          else
-            charpos <= 0;
-          end if;
-          wren  <= '0';
-          cycle <= 0;
-
         end if;
       end if;
     end if;
@@ -308,14 +358,19 @@ begin
   process (VS)                          -- 60Hz clock timing
   begin
     if (rising_edge(VS)) then
+	  blip <= '0';
+	  blop <= '0';
+	  ledr(4) <= '0';
       ballx <= ballx + (ballspd * ballxdir);  -- ball control
       if ballx >= 639 then              -- player 2 missed +1pt for player1
         ballxdir   <= -1;
         ballx      <= 638;  -- ToDo deal with serving the ball after loss of point
         plyr1score <= plyr1score + 1;
+		blop <= '1';
       elsif (ballx <= 1) then
         ballxdir   <= 1; ballx <= 3;
         plyr2score <= plyr2score + 1;
+		blop <= '1';
       end if;
       if plyr1score >= 11 then
         plyr1wins <= 1;  -- ToDo deal with serving the ball after loss of game
@@ -323,18 +378,26 @@ begin
         plyr2wins <= 1;
       end if;
       bally                         <= bally + (ballspd * ballydir);
-      if bally >= 475 then ballydir <= -1;
-      elsif (bally                  <= 115) then ballydir <= 1;
+      if bally >= 475 then 
+		ballydir <= -1;
+		blip <= '1';
+      elsif (bally                  <= 115) then 
+		ballydir <= 1;
+		blip <= '1';
       end if;
       if (ballx < 35) and (ballx > 25) and    -- Has player 1 hit the ball?
         (bally > paddlePlyr1 - 24) and
         (bally < paddlePlyr1 + 16) then
         ballxdir <= 1;
+		blip <= '1';
+		ledr(4) <= '1';
       end if;
       if (ballx < 625) and (ballx > 620) and  -- Has player 2 hit the ball?
         (bally > paddlePlyr2 - 24) and
         (bally < paddlePlyr2 + 16) then
         ballxdir <= -1;
+		ledr(4) <= '1';
+		blip <= '1';
       end if;
 -- player controlled paddles
       paddleplyr1 <= (paddleplyr1 + (to_integer(unsigned(paddlepos1(11 downto 3)))))/2;
