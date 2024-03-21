@@ -369,16 +369,16 @@ end process;
 --        end if;
       end if;
 -- Draw the paddles
-      if (paddleplyr1 > pixelypos) and
-        (paddleplyr1 < pixelypos + 30) and
+      if (paddleplyr1 > pixelypos - 15) and
+        (paddleplyr1 < pixelypos + 15) and
         (pixelxpos > 20) and
         (pixelxpos < 25) then
         vga_r <= "1111";
         vga_g <= "1111";
         vga_b <= "1111";
       end if;
-      if (paddleplyr2 > pixelypos) and
-        (paddleplyr2 < pixelypos + 30) and
+      if (paddleplyr2 > pixelypos - 15) and
+        (paddleplyr2 < pixelypos + 15) and
         (pixelxpos > 620) and
         (pixelxpos < 625) then
         vga_r <= "1111";
@@ -457,14 +457,14 @@ end process;
         end if;
       end if;
       bally <= bally + (ballyspd * ballydir);
-      if bally >= 475 then
+      if bally >= 470 then
         ballydir <= -1;
         blip     <= '1';
-      elsif (bally <= 115) then
+      elsif (bally <= 110) then
         ballydir <= 1;
         blip     <= '1';
       end if;
-      if (ballx < 35) and (ballx > 25)  then  -- Has player 1 hit the ball?
+      if (ballx < 30) and (ballx > 20)  then  -- Has player 1 hit the ball?
         if (bally > paddlePlyr1 - 24) and (bally < paddlePlyr1 - 16) then
 		  ballyspd <= 4;
           ballxdir <= 1;
@@ -487,7 +487,7 @@ end process;
           blip     <= '1';
 		end if;
       end if;
-      if (ballx < 625) and (ballx > 620) then  -- Has player 2 hit the ball?
+      if (ballx < 620) and (ballx > 615) then  -- Has player 2 hit the ball?
         if (bally > paddlePlyr2 - 24) and (bally < paddlePlyr2 - 16) then
 		  ballyspd <= 4;
 		  ballxdir <= -1;
