@@ -1,6 +1,8 @@
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
+use work.dw.all;
+
 
 entity thursdayVGA is
   port(
@@ -101,6 +103,8 @@ architecture RTL of thursdayVGA is
   signal pixelypos   : integer range 0 to 479 := 0;
   signal paddlePlyr1 : integer range 0 to 479 := 200;
   signal paddlePlyr2 : integer range 0 to 479 := 200;
+  signal secondsCtr  : integer range 0 to 3600:= 0;
+  signal seconds     : integer range 0 to 3600:= 0;
 
   signal xdotpos    : integer range 0 to 799  := 0;
   signal ydotpos    : integer range 0 to 524  := 0;
@@ -109,7 +113,10 @@ architecture RTL of thursdayVGA is
   signal bally      : integer range 0 to 479  := 20;
   signal ballxdir   : integer range -1 to 1   := 1;
   signal ballydir   : integer range -1 to 1   := 1;
-  signal ballspd    : integer range -10 to 10 := 2;
+  signal ballxspd    : integer range -10 to 10 := 2;
+  signal ballyspd    : integer range -10 to 10 := 2;
+  signal drawbl		: std_logic;
+  signal scaleBL	: integer range 0 to 100 := 1;
   signal VS         : std_logic;
   signal HS         : std_logic;
   signal txtaddress : std_logic_vector(11 downto 0);
@@ -201,6 +208,13 @@ begin
 --                      CH6   => CONNECTED_TO_CH6,   --         .CH6
 --                      CH7   => CONNECTED_TO_CH7    --         .CH7
       );
+process(pixelclk) is
+begin
+if (falling_edge(pixelclk)) then	  
+	 -- ball sprite
+   SP(pixelxpos, pixelypos, ballx, bally, ball, scaleBL, DRAWBL);
+end if;
+end process;
   -- Enumerate the digits of the scores
   tens1  <= 48 + ((plyr1score / 10) mod 10);
   unit1  <= 48 + (plyr1score mod 10);
@@ -345,13 +359,14 @@ begin
 
       end if;
 -- Draw the ball at current position
-      if (ballx >= pixelxpos) and (ballx < pixelxpos + ballsize) and
-        (bally >= pixelypos) and (bally < pixelypos + ballsize) then
-        if (ball((pixelxpos - ballx) + (10 * (pixelypos - bally))-29) = '1') then
+      if (drawbl = '1') then
+--      if (ballx >= pixelxpos) and (ballx < pixelxpos + ballsize) and
+--        (bally >= pixelypos) and (bally < pixelypos + ballsize) then
+--        if (ball((pixelxpos - ballx) + (10 * (pixelypos - bally))-29) = '1') then
           vga_r <= "1111";
           vga_g <= "1111";
           vga_b <= "1111";
-        end if;
+--        end if;
       end if;
 -- Draw the paddles
       if (paddleplyr1 > pixelypos) and
@@ -381,7 +396,8 @@ begin
       bally         <= 280;
       ballxdir      <= 1;
       ballydir      <= 1;
-      ballspd       <= 2;
+      ballxspd      <= 2;
+      ballyspd      <= 2;
       plyr1score    <= 0;
       plyr2score    <= 0;
       plyr1setscore <= 0;
@@ -389,11 +405,13 @@ begin
       plyr1wins     <= 0;
       plyr2wins     <= 0;
       plyr1serve    <= '0';
+	  scalebl       <= 1;
+	  secondsCtr    <= 0;
     elsif (rising_edge(VS)) then
       blip  <= '0';
       blop  <= '0';
-      ballx <= ballx + (ballspd * ballxdir);  -- ball control
-      if ballx >= 639 then              -- player 2 missed +1pt for player1
+      ballx <= ballx + (ballxspd * ballxdir);  -- ball control
+      if ballx > 630 then              -- player 2 missed +1pt for player1
         ballxdir   <= -1;
         ballx      <= 560;
         plyr1score <= plyr1score + 1;
@@ -402,7 +420,7 @@ begin
           plyr1serve <= '1';
         end if;
         blop <= '1';
-      elsif (ballx <= 1) then
+      elsif (ballx <= 8) then
         ballxdir   <= 1; ballx <= 80;
         plyr2score <= plyr2score + 1;
         if plyr2score = 10 then
@@ -421,7 +439,8 @@ begin
           bally     <= 10;
           ballxdir  <= 0;
           ballydir  <= 0;
-          ballspd   <= 0;
+          ballxspd  <= 0;
+          ballyspd  <= 8;
         end if;
       elsif plyr2score >= 11 then
         plyr2setscore <= plyr2setscore + 1;
@@ -433,10 +452,11 @@ begin
           bally     <= 10;
           ballxdir  <= 0;
           ballydir  <= 0;
-          ballspd   <= 0;
+          ballxspd  <= 0;
+          ballyspd  <= 8;
         end if;
       end if;
-      bally <= bally + (ballspd * ballydir);
+      bally <= bally + (ballyspd * ballydir);
       if bally >= 475 then
         ballydir <= -1;
         blip     <= '1';
@@ -444,18 +464,62 @@ begin
         ballydir <= 1;
         blip     <= '1';
       end if;
-      if (ballx < 35) and (ballx > 25) and    -- Has player 1 hit the ball?
-        (bally > paddlePlyr1 - 24) and
-        (bally < paddlePlyr1 + 16) then
-        ballxdir <= 1;
-        blip     <= '1';
+      if (ballx < 35) and (ballx > 25)  then  -- Has player 1 hit the ball?
+        if (bally > paddlePlyr1 - 24) and (bally < paddlePlyr1 - 16) then
+		  ballyspd <= 4;
+          ballxdir <= 1;
+          blip     <= '1';
+        elsif (bally > paddlePlyr1 - 16) and (bally < paddlePlyr1 - 8) then
+		  ballyspd <= 2;
+          ballxdir <= 1;
+          blip     <= '1';
+        elsif (bally > paddlePlyr1 - 8) and (bally < paddlePlyr1) then
+		  ballyspd <= 0;
+          ballxdir <= 1;
+          blip     <= '1';
+        elsif (bally > paddlePlyr1 ) and (bally < paddlePlyr1 +8) then
+		  ballyspd <= 2;
+          ballxdir <= 1;
+          blip     <= '1';
+        elsif (bally > paddlePlyr1 + 8) and (bally < paddlePlyr1 + 16 ) then
+		  ballyspd <= 4;
+          ballxdir <= 1;
+          blip     <= '1';
+		end if;
       end if;
-      if (ballx < 625) and (ballx > 620) and  -- Has player 2 hit the ball?
-        (bally > paddlePlyr2 - 24) and
-        (bally < paddlePlyr2 + 16) then
-        ballxdir <= -1;
-        blip     <= '1';
+      if (ballx < 625) and (ballx > 620) then  -- Has player 2 hit the ball?
+        if (bally > paddlePlyr2 - 24) and (bally < paddlePlyr2 - 16) then
+		  ballyspd <= 4;
+		  ballxdir <= -1;
+          blip     <= '1';
+        elsif (bally > paddlePlyr2 - 16) and (bally < paddlePlyr2 - 8) then
+		  ballyspd <= 2;
+		  ballxdir <= -1;
+          blip     <= '1';        
+		elsif (bally > paddlePlyr2 - 8) and (bally < paddlePlyr2) then
+		  ballyspd <= 0;
+		  ballxdir <= -1;
+          blip     <= '1';
+		elsif (bally > paddlePlyr2 ) and (bally < paddlePlyr2 + 8) then
+		  ballyspd <= 2;
+		  ballxdir <= -1;
+          blip     <= '1';        
+		elsif (bally > paddlePlyr2 + 8) and (bally < paddlePlyr2 + 16 ) then
+		  ballyspd <= 4;
+		  ballxdir <= -1;
+          blip     <= '1';		  
+		end if;
+
+
       end if;
+	  if secondsctr >= 59 then -- @ 60Hz
+		secondsctr <= 0;
+		seconds <= seconds + 1;
+	  else
+		secondsctr <= secondsctr + 1; -- 1 second period
+		-- scaleBL <= (seconds mod 6) + 1;
+	  end if;
+
 -- player controlled paddles
       paddleplyr1 <= (paddleplyr1 + (to_integer(unsigned(paddlepos1(11 downto 3)))))/2;
       paddleplyr2 <= (paddleplyr2 + (to_integer(unsigned(paddlepos2(11 downto 3)))))/2;
