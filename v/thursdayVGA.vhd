@@ -67,19 +67,19 @@ architecture RTL of thursdayVGA is
       CH7   : out std_logic_vector(11 downto 0)   -- CH7
       );
   end component paddles;
-
+type t_Integer_Array is array (integer range <>) of integer;
 -- sprite for ball
-  signal ball : std_logic_vector(99 downto 0) :=
-    ('0', '0', '0', '1', '1', '1', '1', '0', '0', '0',
-     '0', '0', '1', '1', '1', '1', '1', '1', '0', '0',
-     '0', '1', '1', '1', '1', '1', '1', '1', '1', '0',
-     '1', '1', '1', '1', '1', '1', '1', '1', '1', '1',
-     '1', '1', '1', '1', '0', '0', '1', '1', '1', '1',
-     '1', '1', '1', '1', '0', '0', '1', '1', '1', '1',
-     '1', '1', '1', '1', '1', '1', '1', '1', '1', '1',
-     '0', '1', '1', '1', '1', '1', '1', '1', '1', '0',
-     '0', '0', '1', '1', '1', '1', '1', '1', '0', '0',
-     '0', '0', '0', '1', '1', '1', '1', '0', '0', '0');
+  signal ball : t_Integer_Array(0 to 99) :=
+    (0, 0, 0, 1, 1, 1, 1, 0, 0, 0,
+     0, 0, 1, 1, 1, 1, 1, 1, 0, 0,
+     0, 1, 1, 1, 1, 1, 1, 1, 1, 0,
+     1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+     1, 1, 1, 1, 2, 2, 1, 1, 1, 1,
+     1, 1, 1, 1, 2, 2, 1, 1, 1, 1,
+     1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+     0, 1, 1, 1, 1, 1, 1, 1, 1, 0,
+     0, 0, 1, 1, 1, 1, 1, 1, 0, 0,
+     0, 0, 0, 1, 1, 1, 1, 0, 0, 0);
 -- sprite for paddle
 --  signal paddle : std_logic_vector( 19 downto 0) :=
 --      ('1', '1',
@@ -115,7 +115,7 @@ architecture RTL of thursdayVGA is
   signal ballydir   : integer range -1 to 1   := 1;
   signal ballxspd    : integer range -10 to 10 := 2;
   signal ballyspd    : integer range -10 to 10 := 2;
-  signal drawbl		: std_logic;
+  signal drawbl		: std_logic_vector (1 downto 0);
   signal scaleBL	: integer range 0 to 100 := 1;
   signal VS         : std_logic;
   signal HS         : std_logic;
@@ -212,7 +212,19 @@ process(pixelclk) is
 begin
 if (falling_edge(pixelclk)) then	  
 	 -- ball sprite
-   SP(pixelxpos, pixelypos, ballx, bally, ball, scaleBL, DRAWBL);
+--   SP(pixelxpos, pixelypos, ballx, bally, ball, scaleBL, DRAWBL);
+    IF(pixelxpos-ballx)/scaleBL>=-5 AND (pixelxpos-ballx)/scaleBL<5 AND (pixelypos-bally)/scaleBL>=-5 AND (pixelypos-bally)/scaleBL<5 THEN
+	  if ball(5+((pixelxpos-ballx)/scaleBL) + ((5+((pixelypos-bally)/scaleBL))*10)) = 1 then 
+		DRAWBL<="11";
+	  elsif ball(5+((pixelxpos-ballx)/scaleBL) + ((5+((pixelypos-bally)/scaleBL))*10)) = 2 then 
+		DRAWBL<="10";
+	  else
+		DRAWBL<="00";
+	  end if;
+    ELSE
+		DRAWBL<="00";
+    END IF;
+
 end if;
 end process;
   -- Enumerate the digits of the scores
@@ -359,7 +371,7 @@ end process;
 
       end if;
 -- Draw the ball at current position
-      if (drawbl = '1') then
+      if (drawbl = "11") then
 --      if (ballx >= pixelxpos) and (ballx < pixelxpos + ballsize) and
 --        (bally >= pixelypos) and (bally < pixelypos + ballsize) then
 --        if (ball((pixelxpos - ballx) + (10 * (pixelypos - bally))-29) = '1') then
@@ -367,6 +379,11 @@ end process;
           vga_g <= "1111";
           vga_b <= "1111";
 --        end if;
+		elsif (drawbl = "10") then
+          vga_r <= "1111";
+          vga_g <= "0000";
+          vga_b <= "1111";
+		
       end if;
 -- Draw the paddles
       if (paddleplyr1 > pixelypos - 15) and
