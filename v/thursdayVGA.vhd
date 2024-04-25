@@ -67,7 +67,7 @@ architecture RTL of thursdayVGA is
       CH7   : out std_logic_vector(11 downto 0)   -- CH7
       );
   end component paddles;
-type t_Integer_Array is array (integer range <>) of integer;
+  type t_Integer_Array is array (integer range <>) of integer;
 -- sprite for ball
   signal ball : t_Integer_Array(0 to 99) :=
     (0, 0, 0, 1, 1, 1, 1, 0, 0, 0,
@@ -99,12 +99,12 @@ type t_Integer_Array is array (integer range <>) of integer;
   signal Blanking    : std_logic;
   signal hpos        : std_logic_vector(10 downto 0);
   signal vpos        : std_logic_vector(9 downto 0);
-  signal pixelxpos   : integer range 0 to 639 := 0;
-  signal pixelypos   : integer range 0 to 479 := 0;
-  signal paddlePlyr1 : integer range 0 to 479 := 200;
-  signal paddlePlyr2 : integer range 0 to 479 := 200;
-  signal secondsCtr  : integer range 0 to 3600:= 0;
-  signal seconds     : integer range 0 to 3600:= 0;
+  signal pixelxpos   : integer range 0 to 639  := 0;
+  signal pixelypos   : integer range 0 to 479  := 0;
+  signal paddlePlyr1 : integer range 0 to 479  := 200;
+  signal paddlePlyr2 : integer range 0 to 479  := 200;
+  signal secondsCtr  : integer range 0 to 3600 := 0;
+  signal seconds     : integer range 0 to 3600 := 0;
 
   signal xdotpos    : integer range 0 to 799  := 0;
   signal ydotpos    : integer range 0 to 524  := 0;
@@ -113,10 +113,10 @@ type t_Integer_Array is array (integer range <>) of integer;
   signal bally      : integer range 0 to 479  := 20;
   signal ballxdir   : integer range -1 to 1   := 1;
   signal ballydir   : integer range -1 to 1   := 1;
-  signal ballxspd    : integer range -10 to 10 := 2;
-  signal ballyspd    : integer range -10 to 10 := 2;
-  signal drawbl		: std_logic_vector (1 downto 0);
-  signal scaleBL	: integer range 0 to 100 := 1;
+  signal ballxspd   : integer range -10 to 10 := 2;
+  signal ballyspd   : integer range -10 to 10 := 2;
+  signal drawbl     : std_logic_vector (1 downto 0);
+  signal scaleBL    : integer range 0 to 100  := 1;
   signal VS         : std_logic;
   signal HS         : std_logic;
   signal txtaddress : std_logic_vector(11 downto 0);
@@ -208,25 +208,25 @@ begin
 --                      CH6   => CONNECTED_TO_CH6,   --         .CH6
 --                      CH7   => CONNECTED_TO_CH7    --         .CH7
       );
-process(pixelclk) is
-begin
-if (falling_edge(pixelclk)) then	  
-	 -- ball sprite
+  process(pixelclk) is
+  begin
+    if (falling_edge(pixelclk)) then
+      -- ball sprite
 --   SP(pixelxpos, pixelypos, ballx, bally, ball, scaleBL, DRAWBL);
-    IF(pixelxpos-ballx)/scaleBL>=-5 AND (pixelxpos-ballx)/scaleBL<5 AND (pixelypos-bally)/scaleBL>=-5 AND (pixelypos-bally)/scaleBL<5 THEN
-	  if ball(5+((pixelxpos-ballx)/scaleBL) + ((5+((pixelypos-bally)/scaleBL))*10)) = 1 then 
-		DRAWBL<="11";
-	  elsif ball(5+((pixelxpos-ballx)/scaleBL) + ((5+((pixelypos-bally)/scaleBL))*10)) = 2 then 
-		DRAWBL<="10";
-	  else
-		DRAWBL<="00";
-	  end if;
-    ELSE
-		DRAWBL<="00";
-    END IF;
+      if(pixelxpos-ballx)/scaleBL >= -5 and (pixelxpos-ballx)/scaleBL < 5 and (pixelypos-bally)/scaleBL >= -5 and (pixelypos-bally)/scaleBL < 5 then
+        if ball(5+((pixelxpos-ballx)/scaleBL) + ((5+((pixelypos-bally)/scaleBL))*10)) = 1 then
+          DRAWBL <= "11";
+        elsif ball(5+((pixelxpos-ballx)/scaleBL) + ((5+((pixelypos-bally)/scaleBL))*10)) = 2 then
+          DRAWBL <= "10";
+        else
+          DRAWBL <= "00";
+        end if;
+      else
+        DRAWBL <= "00";
+      end if;
 
-end if;
-end process;
+    end if;
+  end process;
   -- Enumerate the digits of the scores
   tens1  <= 48 + ((plyr1score / 10) mod 10);
   unit1  <= 48 + (plyr1score mod 10);
@@ -293,7 +293,7 @@ end process;
         charpos    <= 0;
       else
         if cycle = 0 then               -- state machine for writing to text
-                                     -- memory with ascii code values
+          -- memory with ascii code values
           cycle      <= 1;
           wren       <= '0';
           txtAddress <= std_logic_vector(to_unsigned(charpos, txtAddress'length));
@@ -316,8 +316,8 @@ end process;
           wren  <= '1';
           cycle <= 2;
         else                  -- cycle is 2, reset cycle and increment
-                        -- memory address for next
-                                  -- character position
+          -- memory address for next
+          -- character position
           wren  <= '0';
           cycle <= 0;
           if charpos < 1023 then
@@ -349,7 +349,7 @@ end process;
         else
 -- draw the grass
           vga_r <= "0001";
-          vga_g <= "0111";
+          vga_g <= "0111"
           vga_b <= "0001";
         end if;
 -- draw the sidelines
@@ -375,15 +375,15 @@ end process;
 --      if (ballx >= pixelxpos) and (ballx < pixelxpos + ballsize) and
 --        (bally >= pixelypos) and (bally < pixelypos + ballsize) then
 --        if (ball((pixelxpos - ballx) + (10 * (pixelypos - bally))-29) = '1') then
-          vga_r <= "1111";
-          vga_g <= "1111";
-          vga_b <= "1111";
+        vga_r <= "1111";
+        vga_g <= "1111";
+        vga_b <= "1111";
 --        end if;
-		elsif (drawbl = "10") then
-          vga_r <= "1111";
-          vga_g <= "0000";
-          vga_b <= "1111";
-		
+      elsif (drawbl = "10") then
+        vga_r <= "1111";
+        vga_g <= "0000";
+        vga_b <= "1111";
+
       end if;
 -- Draw the paddles
       if (paddleplyr1 > pixelypos - 15) and
@@ -422,13 +422,13 @@ end process;
       plyr1wins     <= 0;
       plyr2wins     <= 0;
       plyr1serve    <= '0';
-	  scalebl       <= 1;
-	  secondsCtr    <= 0;
+      scalebl       <= 1;
+      secondsCtr    <= 0;
     elsif (rising_edge(VS)) then
       blip  <= '0';
       blop  <= '0';
       ballx <= ballx + (ballxspd * ballxdir);  -- ball control
-      if ballx > 630 then              -- player 2 missed +1pt for player1
+      if ballx > 630 then               -- player 2 missed +1pt for player1
         ballxdir   <= -1;
         ballx      <= 560;
         plyr1score <= plyr1score + 1;
@@ -481,61 +481,61 @@ end process;
         ballydir <= 1;
         blip     <= '1';
       end if;
-      if (ballx < 30) and (ballx > 20)  then  -- Has player 1 hit the ball?
+      if (ballx < 30) and (ballx > 20) then    -- Has player 1 hit the ball?
         if (bally > paddlePlyr1 - 24) and (bally < paddlePlyr1 - 16) then
-		  ballyspd <= 4;
+          ballyspd <= 4;
           ballxdir <= 1;
           blip     <= '1';
         elsif (bally > paddlePlyr1 - 16) and (bally < paddlePlyr1 - 8) then
-		  ballyspd <= 2;
+          ballyspd <= 2;
           ballxdir <= 1;
           blip     <= '1';
         elsif (bally > paddlePlyr1 - 8) and (bally < paddlePlyr1) then
-		  ballyspd <= 0;
+          ballyspd <= 0;
           ballxdir <= 1;
           blip     <= '1';
-        elsif (bally > paddlePlyr1 ) and (bally < paddlePlyr1 +8) then
-		  ballyspd <= 2;
+        elsif (bally > paddlePlyr1) and (bally < paddlePlyr1 +8) then
+          ballyspd <= 2;
           ballxdir <= 1;
           blip     <= '1';
-        elsif (bally > paddlePlyr1 + 8) and (bally < paddlePlyr1 + 16 ) then
-		  ballyspd <= 4;
+        elsif (bally > paddlePlyr1 + 8) and (bally < paddlePlyr1 + 16) then
+          ballyspd <= 4;
           ballxdir <= 1;
           blip     <= '1';
-		end if;
+        end if;
       end if;
       if (ballx < 620) and (ballx > 615) then  -- Has player 2 hit the ball?
         if (bally > paddlePlyr2 - 24) and (bally < paddlePlyr2 - 16) then
-		  ballyspd <= 4;
-		  ballxdir <= -1;
+          ballyspd <= 4;
+          ballxdir <= -1;
           blip     <= '1';
         elsif (bally > paddlePlyr2 - 16) and (bally < paddlePlyr2 - 8) then
-		  ballyspd <= 2;
-		  ballxdir <= -1;
-          blip     <= '1';        
-		elsif (bally > paddlePlyr2 - 8) and (bally < paddlePlyr2) then
-		  ballyspd <= 0;
-		  ballxdir <= -1;
+          ballyspd <= 2;
+          ballxdir <= -1;
           blip     <= '1';
-		elsif (bally > paddlePlyr2 ) and (bally < paddlePlyr2 + 8) then
-		  ballyspd <= 2;
-		  ballxdir <= -1;
-          blip     <= '1';        
-		elsif (bally > paddlePlyr2 + 8) and (bally < paddlePlyr2 + 16 ) then
-		  ballyspd <= 4;
-		  ballxdir <= -1;
-          blip     <= '1';		  
-		end if;
+        elsif (bally > paddlePlyr2 - 8) and (bally < paddlePlyr2) then
+          ballyspd <= 0;
+          ballxdir <= -1;
+          blip     <= '1';
+        elsif (bally > paddlePlyr2) and (bally < paddlePlyr2 + 8) then
+          ballyspd <= 2;
+          ballxdir <= -1;
+          blip     <= '1';
+        elsif (bally > paddlePlyr2 + 8) and (bally < paddlePlyr2 + 16) then
+          ballyspd <= 4;
+          ballxdir <= -1;
+          blip     <= '1';
+        end if;
 
 
       end if;
-	  if secondsctr >= 59 then -- @ 60Hz
-		secondsctr <= 0;
-		seconds <= seconds + 1;
-	  else
-		secondsctr <= secondsctr + 1; -- 1 second period
-		-- scaleBL <= (seconds mod 6) + 1;
-	  end if;
+      if secondsctr >= 59 then          -- @ 60Hz
+        secondsctr <= 0;
+        seconds    <= seconds + 1;
+      else
+        secondsctr <= secondsctr + 1;   -- 1 second period
+      -- scaleBL <= (seconds mod 6) + 1;
+      end if;
 
 -- player controlled paddles
       paddleplyr1 <= (paddleplyr1 + (to_integer(unsigned(paddlepos1(11 downto 3)))))/2;
